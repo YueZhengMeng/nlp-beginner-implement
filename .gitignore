@@ -1,0 +1,8 @@
+.idea
+.vscode
+__pycache__
+/lab1/__pycache__
+/lab1/exp/*.npz
+/lab2/__pycache__
+/lab2/glove.6B/*.txt
+/lab2/exp/*.pt
