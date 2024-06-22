@@ -70,19 +70,24 @@ class CrossEntropyLossLayer:
         self.prob = None
         self.label_onehot = None
 
-    def forward(self, prob, label):
+    def forward(self, output, label):
         # 备份概率值，反向传播时会用到
-        self.prob = prob
+        self.prob = softmax(output)
         # 将标签转换为one-hot编码并备份
         batch_size = self.prob.shape[0]
         self.label_onehot = np.zeros_like(self.prob)
         self.label_onehot[np.arange(batch_size), label] = 1.0
         # 计算交叉熵损失
-        loss = -np.sum(np.log(self.prob) * self.label_onehot) / batch_size
+        # loss = -np.sum(np.log(self.prob) * self.label_onehot) / batch_size
+        # 为了防止溢出，使用下面的计算方式
+        output_max = np.max(output, axis=1, keepdims=True)
+        log_prob = output - output_max - np.log(np.sum(np.exp(output - output_max), axis=1, keepdims=True))
+        loss = -np.sum(log_prob * self.label_onehot) / batch_size
         return loss
 
     def backward(self):
         # 反向传播计算输入的梯度
+        # 虽然我们在前向计算时使用了优化过的公式，但这些修改不影响梯度的计算
         batch_size = self.prob.shape[0]
         d_input = (self.prob - self.label_onehot) / batch_size
         return d_input
@@ -95,7 +100,6 @@ class SentenceClassificationModel:
         self.linear1 = LinearLayer(input_size, hidden_size)
         self.relu = ReLULayer()
         self.linear2 = LinearLayer(hidden_size, output_size)
-        self.softmax = softmax
         self.loss_layer = CrossEntropyLossLayer()
 
     def forward(self, x):
@@ -104,11 +108,12 @@ class SentenceClassificationModel:
         x = self.linear1.forward(x)
         x = self.relu.forward(x)
         x = self.linear2.forward(x)
-        x = self.softmax(x)
+        # 直接返回模型的output，不用计算概率
+        # 用于防溢出交叉熵损失的计算
         return x
 
-    def compute_loss(self, prob, label):
-        return self.loss_layer.forward(prob, label)
+    def compute_loss(self, output, label):
+        return self.loss_layer.forward(output, label)
 
     def backward(self):
         # 反向传播计算
@@ -142,7 +147,8 @@ if __name__ == '__main__':
     model = SentenceClassificationModel(100, 50, 30, 5)
     x = np.random.randint(0, 100, (32, 100))
     label = np.random.randint(0, 5, 32)
-    prob = model.forward(x)
+    output = model.forward(x)
+    prob = softmax(output)
     loss = model.compute_loss(prob, label)
     print('loss:', loss)
     model.backward()

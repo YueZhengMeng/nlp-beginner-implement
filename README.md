@@ -24,6 +24,8 @@
     详细公式推导与代码解析见 ./lab1/math_formula.ipynb，模型代码见 ./lab1/model_numpy.py  
     参考资料：  
     https://zhuanlan.zhihu.com/p/380036598   
+    https://zh.d2l.ai/chapter_multilayer-perceptrons/backprop.html  
+    https://zh.d2l.ai/chapter_linear-networks/softmax-regression-concise.html  
     https://www.cnblogs.com/gczr/p/16345902.html   
     https://blog.csdn.net/chaipp0607/article/details/101946040  
 2. 手搓BOW与NGram两种tokenizer，在训练集上训练词表  
@@ -43,6 +45,7 @@
 ## Tips
 1. 手搓模型的梯度值很小，要设置较大的学习率，但也不能太大，否则会发生溢出。实测0.1左右的学习率比较合适。
 2. 增加batch_size可以加快训练速度，但是精度会下降。实测batch_size=32比较合适。
+3. 现存的实验数据是在"lab1加入了防溢出CrossEntropyLoss"这个commit之前完成的，使用最新的代码进行复现可能会有一些不同。  
 
 # 任务二：基于深度学习的文本分类
 

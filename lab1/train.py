@@ -6,13 +6,13 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from SentenceDataloader import SentenceDataloader
-from model_numpy import SentenceClassificationModel
+from model_numpy import SentenceClassificationModel, softmax
 from tokenizers import BagOfWord, NGram
 
 seed = 42
 batch_size = 32
 # 手搓模型的梯度值很小，所以学习率设置的比较大
-# 整个训练过程中学习率从1线性下降到0.1
+# 整个训练过程中学习率从0.1线性下降到0.01
 start_learning_rate = 0.1
 end_learning_rate = 0.01
 epochs = 10
@@ -60,8 +60,9 @@ def train_per_epoch(train_dataloader):
     correct = 0
     for step in tqdm(range(train_dataloader.train_step)):
         x, label = train_dataloader.get_batch()
-        prob = model.forward(x)
-        loss = model.compute_loss(prob, label)
+        output = model.forward(x)
+        prob = softmax(output)
+        loss = model.compute_loss(output, label)
         pred = np.argmax(prob, axis=1)
         correct += np.sum(pred == label)
         model.backward()
@@ -76,7 +77,8 @@ def eval_per_epoch(val_dataloader):
     correct = 0
     for step in tqdm(range(val_dataloader.train_step)):
         x, label = val_dataloader.get_batch()
-        prob = model.forward(x)
+        output = model.forward(x)
+        prob = softmax(output)
         pred = np.argmax(prob, axis=1)
         correct += np.sum(pred == label)
     val_accuracy = correct / val_dataloader.data_size
@@ -121,7 +123,8 @@ def generate_submission():
     pred_list = []
     for step in tqdm(range(test_dataloader.train_step)):
         x, _ = test_dataloader.get_batch()
-        prob = model.forward(x)
+        output = model.forward(x)
+        prob = softmax(output)
         pred = np.argmax(prob, axis=1)
         pred_list.extend(pred)
     test_df['Sentiment'] = pred_list
