@@ -45,7 +45,28 @@
 ## Tips
 1. 手搓模型的梯度值很小，要设置较大的学习率，但也不能太大，否则会发生溢出。实测0.1左右的学习率比较合适。
 2. 增加batch_size可以加快训练速度，但是精度会下降。实测batch_size=32比较合适。
-3. 现存的实验数据是在"lab1加入了防溢出CrossEntropyLoss"这个commit之前完成的，使用最新的代码进行复现可能会有一些不同。  
+3. 以上实验数据是在"lab1加入了防溢出CrossEntropyLoss"这个commit之前完成的，之后重复实验验证提交kaggle评测精度完全一致。  
+
+## 更新
+&emsp;参考 https://zh.d2l.ai/chapter_natural-language-processing-pretraining/subword-embedding.html 实现了BPE分词  
+&emsp;并且实现了类似BERT的前缀后缀分词。参考资料中的代码仅基于字母分词。代码见 ./lab1/tokenizers.py  
+&emsp;原计划生成一个大小为20000的字典，但是在生成过程中，合并次数达到11882时，学习到的的合并规则，已经将训练集的所有被拆分为字符级的词汇，重新合并为完整的词，因此停止继续生成。  
+&emsp;在此基础上去掉低频词，生成了一个大小为9069的字典。相比于BOW(11452)与NGram(39708)的字典，要更小。  
+&emsp;拟合实验确认训练集上精度可以达到99%以上，验证集上精度在epoch 3达到56%左右，之后下降。  
+&emsp;kaggle评测精度为59.791%。截图见 ./lab1/exp/kaggle_result_lab1_BPE.png  
+&emsp;与BOW的词典相比，有2325个词在BPE字典中但不在BOW字典中，这些词主要是前缀后缀子词，符合BPE的分词规则。  
+&emsp;有4708个词在BOW字典中但不在BPE字典中，主要是完整的词。最初我对此感到困惑，直觉上认为在BPE的训练过程中，如果某个词被完整复原，那么应该有一条合并规则是将这个词的前半部分与后半部分合并，合并的结果，也就是这个词，会被加入到字典中。之前的训练过程中，训练集的所有的词都被完整复原了，那么这些词应该都会被加入到BPE字典中。换句话说，BOW字典应该是BPE字典的一个子集才对。  
+&emsp;通过分析BPE的字典生成过程，以escapades这个单词的分词与合并过程为例：  
+merged:  #e #s -> #es &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#e#s -> e#s#c#a#p#a#d#es  
+merged:  #a #d -> #ad &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#es -> e#s#c#a#p#ad#es  
+merged:  d #e -> de  &emsp;&emsp;&emsp;&emsp;  e#s#c#a#p#ad#es -> e#s#c#a#p#ades  
+merged:  #a #p -> #ap &emsp;&emsp;&emsp;       e#s#c#a#p#ades -> e#s#c#ap#ades  
+merged:  s #c -> sc &emsp;&emsp;&emsp;&emsp;&emsp;        e#s#c#ap#ades -> e#sc#ap#ades  
+merged:  c #ap -> cap &emsp;&emsp;&emsp;                  e#sc#ap#ades -> e#scap#ades  
+merged:  p #a -> pa &emsp;&emsp;&emsp;&emsp;              e#scap#ades -> e#scapades  
+merged:  e #scap -> escap &emsp;                          e#scapades -> escapades  
+&emsp;发现每次合并的两个子词可以在原单词的任意位置，最后一步也不一定正好是合并单词的前半部分与后半部分。因此，BPE的字典中不一定会包含每一个完整的词。  
+&emsp;至此疑惑得到解答。
 
 # 任务二：基于深度学习的文本分类
 

@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from SentenceDataloader import SentenceDataloader
 from model_numpy import SentenceClassificationModel, softmax
-from tokenizers import BagOfWord, NGram
+from tokenizers import BagOfWord, NGram, BPE
 
 seed = 42
 batch_size = 32
@@ -21,8 +21,8 @@ input_size = 128
 hidden_size = 4 * input_size
 num_class = 5
 data_size = 150000
-# tokenizer_type = 'bow' 或 'ngram'
-tokenizer_type = 'ngram'
+# tokenizer_type = 'bow' 或 'ngram' 或 ‘bpe’
+tokenizer_type = 'bpe'
 img_save_path = './exp/accuracy-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.png' % (
     tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size)
 model_save_path = './exp/model-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.npz' % (
@@ -37,8 +37,10 @@ random.seed(seed)
 # 实例化tokenizer
 if tokenizer_type == 'bow':
     tokenizer = BagOfWord()
-else:
+elif tokenizer_type == 'ngram':
     tokenizer = NGram()
+else:
+    tokenizer = BPE()
 
 # 读取训练集数据
 train_df = pd.read_csv('../Sentiment Analysis on Movie Reviews/train.tsv', sep='\t', header=0)
