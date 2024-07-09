@@ -29,7 +29,7 @@
     https://www.cnblogs.com/gczr/p/16345902.html   
     https://blog.csdn.net/chaipp0607/article/details/101946040  
 2. 手搓BOW与NGram两种tokenizer，在训练集上训练词表  
-    为了降低手搓模型的复杂度与工程量，我选择将句子tokenize为Multi-hot向量，经过线性层映射后直接得到句向量，而不是使用词向量。代码见 ./lab1/tokenizers.py
+    为了降低手搓模型的复杂度与工程量，我选择将句子tokenize为multi-hot向量，经过线性层映射后直接得到句向量，而不是使用词向量。没有使用PAD与UNK。代码见 ./lab1/tokenizers.py
 3. 拟合实验：
     使用训练集的前3000条数据训练模型，使用训练集的3000-3999条数据验证模型，进行100个epoch的训练。  
     基于BOW与NGram的模型在训练集上最终都可以达到97%以上的准确率，在验证集上只需要1个epoch就可以达到56%左右的准确率，之后不会继续上升，10个epoch之后还会下降。  
@@ -44,28 +44,29 @@
 
 ## Tips
 1. 手搓模型的梯度值很小，要设置较大的学习率，但也不能太大，否则会发生溢出。实测0.1左右的学习率比较合适。
-2. 增加batch_size可以加快训练速度，但是精度会下降。实测batch_size=32比较合适。
-3. 以上实验数据是在"lab1加入了防溢出CrossEntropyLoss"这个commit之前完成的，之后重复实验验证提交kaggle评测精度完全一致。  
+2. 增加batch_size并等比例增加学习率可以加快训练速度，但是精度会下降。实测batch_size=32比较合适。
+3. 以上实验数据是在"lab1加入了防溢出CrossEntropyLoss"这个commit之前完成的，之后重复实验结果提交kaggle评测精度完全一致(小数点后三位)。  
 
 ## 更新
 &emsp;参考 https://zh.d2l.ai/chapter_natural-language-processing-pretraining/subword-embedding.html 实现了BPE分词  
-&emsp;并且实现了类似BERT的前缀后缀分词。参考资料中的代码仅基于字母分词。代码见 ./lab1/tokenizers.py  
-&emsp;原计划生成一个大小为20000的字典，但是在生成过程中，合并次数达到11882时，学习到的的合并规则，已经将训练集的所有被拆分为字符级的词汇，重新合并为完整的词，因此停止继续生成。  
-&emsp;在此基础上去掉低频词，生成了一个大小为9069的字典。相比于BOW(11452)与NGram(39708)的字典，要更小。  
-&emsp;拟合实验确认训练集上精度可以达到99%以上，验证集上精度在epoch 3达到56%左右，之后下降。  
-&emsp;kaggle评测精度为59.791%。截图见 ./lab1/exp/kaggle_result_lab1_BPE.png  
-&emsp;与BOW的词典相比，有2325个词在BPE字典中但不在BOW字典中，这些词主要是前缀后缀子词，符合BPE的分词规则。  
-&emsp;有4708个词在BOW字典中但不在BPE字典中，主要是完整的词。最初我对此感到困惑，直觉上认为在BPE的训练过程中，如果某个词被完整复原，那么应该有一条合并规则是将这个词的前半部分与后半部分合并，合并的结果，也就是这个词，会被加入到字典中。之前的训练过程中，训练集的所有的词都被完整复原了，那么这些词应该都会被加入到BPE字典中。换句话说，BOW字典应该是BPE字典的一个子集才对。  
-&emsp;通过分析BPE的字典生成过程，以escapades这个单词的分词与合并过程为例：  
-merged:  #e #s -> #es &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#e#s -> e#s#c#a#p#a#d#es  
-merged:  #a #d -> #ad &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#es -> e#s#c#a#p#ad#es  
-merged:  d #e -> de  &emsp;&emsp;&emsp;&emsp;  e#s#c#a#p#ad#es -> e#s#c#a#p#ades  
-merged:  #a #p -> #ap &emsp;&emsp;&emsp;       e#s#c#a#p#ades -> e#s#c#ap#ades  
-merged:  s #c -> sc &emsp;&emsp;&emsp;&emsp;&emsp;        e#s#c#ap#ades -> e#sc#ap#ades  
-merged:  c #ap -> cap &emsp;&emsp;&emsp;                  e#sc#ap#ades -> e#scap#ades  
-merged:  p #a -> pa &emsp;&emsp;&emsp;&emsp;              e#scap#ades -> e#scapades  
-merged:  e #scap -> escap &emsp;                          e#scapades -> escapades  
-&emsp;发现每次合并的两个子词可以在原单词的任意位置，最后一步也不一定正好是合并单词的前半部分与后半部分。因此，BPE的字典中不一定会包含每一个完整的词。  
+&emsp;并且实现了类似BERT的WordPiece的前缀后缀分词。参考资料中的代码仅基于字母分词。代码见 ./lab1/tokenizers.py  
+&emsp;相比于之前实验的BOW与NGram，词表加入了PAD与UNK，以及26个字母。由于是tokenizer到multi-hot向量，PAD并没有用上。  
+&emsp;原计划生成一个大小为20000的词表，但是在生成过程中，合并次数达到11882时，学习到的的合并规则，已经将训练集的所有被拆分为字符级的词汇，重新合并为完整的词，因此停止继续生成。  
+&emsp;在此基础上去掉低频词，生成了一个大小为9069的词表。相比于BOW(11452)与NGram(39708)的词表，要更小。  
+&emsp;拟合实验确认训练集上精度可以达到99%以上，验证集上精度在epoch 3达到56%左右，之后下降。
+&emsp;正式训练实验方法同上，结果提交kaggle评测精度为59.791%。截图见 ./lab1/exp/kaggle_result_lab1_BPE.png  
+&emsp;与BOW的词表相比，有2325个词在BPE词表中但不在BOW词表中，这些词主要是前缀后缀子词，符合BPE的分词规则。  
+&emsp;有4708个词在BOW词表中但不在BPE词表中，主要是完整的词。最初我对此感到困惑，直觉上认为在BPE的训练过程中，如果某个词被完整复原，那么应该有一条合并规则是将这个词的前半部分与后半部分合并，合并的结果，也就是这个词，会被加入到词表中。之前的训练过程中，训练集的所有的词都被完整复原了，那么这些词应该都会被加入到BPE词表中。换句话说，BOW词表应该是BPE词表的一个子集才对。  
+&emsp;通过分析BPE的词表生成过程，以escapades这个单词的分词与合并过程为例：  
+&emsp;&emsp;merged:  #e #s -> #es &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#e#s -> e#s#c#a#p#a#d#es  
+&emsp;&emsp;merged:  #a #d -> #ad &emsp;&emsp;&emsp;       e#s#c#a#p#a#d#es -> e#s#c#a#p#ad#es  
+&emsp;&emsp;merged:  d #e -> de  &emsp;&emsp;&emsp;&emsp;  e#s#c#a#p#ad#es -> e#s#c#a#p#ades  
+&emsp;&emsp;merged:  #a #p -> #ap &emsp;&emsp;&emsp;       e#s#c#a#p#ades -> e#s#c#ap#ades  
+&emsp;&emsp;merged:  s #c -> sc &emsp;&emsp;&emsp;&emsp;        e#s#c#ap#ades -> e#sc#ap#ades  
+&emsp;&emsp;merged:  c #ap -> cap &emsp;&emsp;&emsp;                  e#sc#ap#ades -> e#scap#ades  
+&emsp;&emsp;merged:  p #a -> pa &emsp;&emsp;&emsp;&emsp;              e#scap#ades -> e#scapades  
+&emsp;&emsp;merged:  e #scap -> escap &emsp;                          e#scapades -> escapades  
+&emsp;发现每次合并的两个子词可以在原单词的任意位置，最后一步也不一定正好是合并单词的前半部分与后半部分。因此，BPE的词表中不一定会包含每一个完整的词。  
 &emsp;至此疑惑得到解答。
 
 # 任务二：基于深度学习的文本分类
@@ -87,7 +88,7 @@ merged:  e #scap -> escap &emsp;                          e#scapades -> escapade
 
 ## 实现方法与结果
 1. 下载glove.6B预训练词向量，手搓代码进行解析，获取vocab与词向量矩阵，并保存到文件  
-    由于glove.6B的vocab太大(400K)，embedding层计算量相当可观，我选择仅使用最小的50维词向量。  
+    由于glove.6B的词表很大(400K)，embedding层参数量相当可观，我选择仅使用最小的50维词向量。  
     代码见 ./lab2/tokenizers.py  
 2. 搭建TextRNN模型，使用3层BiLSTM或BiGRU，对句子进行特征抽取  
     代码见 ./lab2/TextRNN.py  
@@ -118,6 +119,25 @@ merged:  e #scap -> escap &emsp;                          e#scapades -> escapade
 
 
 ## Tips
-1. 我实现的tokenizer在会返回根据last_token_pos，给出最后一个有效token的位置。在TextRNN中的rnn前向计算结束后，取出对应的hidden state，避免输出受到padding的影响。  
-    这种实现方法是我拍脑门想出来的，不一定是最优解。最合适的方法应该是调用torch.nn.utils.rnn.pack_padded_sequence和torch.nn.utils.rnn.pad_packed_sequence进行处理
-2. 即使Glove词典规模已经很大(400K), 但是在实际应用中，未登录词依然较多。
+1. 我实现的tokenizer会返回last_token_pos，给出最后一个有效token的位置。在TextRNN中的rnn前向计算结束后，取出对应的hidden state，避免输出受到padding的影响。  
+    这种实现方法是我拍脑门想出来的，不一定是最优解。最常用的方法应该是调用torch.nn.utils.rnn.pack_padded_sequence和torch.nn.utils.rnn.pad_packed_sequence进行处理。  
+    查阅词表发现，由于没有手动额外加入PAD与UNK，使得 'the' 的id是0，padding用的也是0，我并不能确定这种重叠在数学上是否有影响。以后有时间会重新实验。  
+    至于TextCNN中如何处理padding，我暂时没有找到参考资料。  
+2. 即使Glove词表规模已经很大(400K), 但是在实际应用中，未登录词依然较多。  
+
+## 更新
+改进tokenizer与TextRNN模型的实现，手动在glove词表中加入PAD与UNK，并初始化为全0向量。  
+接入torch.nn.utils.rnn.pack_padded_sequence和torch.nn.utils.rnn.pad_packed_sequence，用于处理padding。  
+在TextCNN中将PAD embedding为全0词向量，使其几乎不影响卷积和maxpooling结果。  
+此外，之前实验因疏忽导致验证集dataloader的shuffle参数错误设置为True，本组实验中已修正。由于之前的验证都是基于完整的训练集进行的，因此这个错误影响不大。  
+重新实验结果上传到kaggle评测，评测结果：  
+cnn  + random ： 62.022  
+cnn  + glove  ： 61.859  
+gru  + random ： 61.859  
+gru  + glove  ： 63.399  
+lstm + random ： 62.497  
+lstm + glove  ： 63.193  
+截图见 ./lab2/exp/kaggle_result_lab2_update.png  
+注意：重新试验后 ./lab2/exp 文件夹下的图片和csv文件已被更新覆盖。  
+
+
