@@ -12,14 +12,14 @@ class BagOfWord:
     def __init__(self, do_lower_case=True):
         self.do_lower_case = do_lower_case
         if os.path.exists('vocab_BOW.json'):
-            print("开始加载BOW字典")
+            print("开始加载BOW词表")
             with open('vocab_BOW.json', 'r') as f:
                 self.vocab = json.load(f)
-            print("加载BOW字典成功, 字典大小：", len(self.vocab))
+            print("加载BOW词表成功, 词表大小：", len(self.vocab))
         else:
-            print("开始生成BOW字典")
+            print("开始生成BOW词表")
             self.vocab = self.generate_vocab()
-            print("生成BOW字典成功")
+            print("生成BOW词表成功")
         self.vocab_size = len(self.vocab)
 
     def generate_vocab(self, train_path='../Sentiment Analysis on Movie Reviews/train.tsv'):
@@ -35,16 +35,16 @@ class BagOfWord:
                     vocab[word] = {"index": len(vocab), "count": 1}
                 else:
                     vocab[word]["count"] += 1
-        print("原始字典大小：", len(vocab))
-        print("原始字典词频：", analyze_vocab(vocab))
+        print("原始词表大小：", len(vocab))
+        print("原始词表词频：", analyze_vocab(vocab))
         print("过滤掉词频小于10的词")
         # 保留出现次数不小于10的词，以及index和count信息
         vocab = {k: v for k, v in vocab.items() if v["count"] >= 10}
         # 重新编号
         for idx, (k, v) in enumerate(vocab.items()):
             vocab[k]["index"] = idx
-        print("筛选后字典大小：", len(vocab))
-        print("筛选后字典词频：", analyze_vocab(vocab))
+        print("筛选后词表大小：", len(vocab))
+        print("筛选后词表词频：", analyze_vocab(vocab))
         with open('vocab_BOW.json', 'w') as f:
             json.dump(vocab, f)
         return vocab
@@ -69,14 +69,14 @@ class NGram:
         self.ngram = ngram
         self.do_lower_case = do_lower_case
         if os.path.exists('vocab_NGram.json'):
-            print("开始加载NGram字典")
+            print("开始加载NGram词表")
             with open('vocab_NGram.json', 'r') as f:
                 self.vocab = json.load(f)
-            print("加载NGram字典结束, 字典大小：", len(self.vocab))
+            print("加载NGram词表结束, 词表大小：", len(self.vocab))
         else:
-            print("开始生成NGram字典")
+            print("开始生成NGram词表")
             self.vocab = self.generate_vocab()
-            print("生成NGram字典结束")
+            print("生成NGram词表结束")
         self.vocab_size = len(self.vocab)
 
     def generate_vocab(self, train_path='../Sentiment Analysis on Movie Reviews/train.tsv'):
@@ -94,16 +94,16 @@ class NGram:
                         vocab[feature] = {"index": len(vocab), "count": 1}
                     else:
                         vocab[feature]["count"] += 1
-        print("原始字典大小：", len(vocab))
-        print("原始字典词频：", analyze_vocab(vocab))
+        print("原始词表大小：", len(vocab))
+        print("原始词表词频：", analyze_vocab(vocab))
         print("过滤掉词频小于10的词")
         # 保留出现次数不小于10的词，以及index和count信息
         vocab = {k: v for k, v in vocab.items() if v["count"] >= 10}
         # 重新编号
         for idx, (k, v) in enumerate(vocab.items()):
             vocab[k]["index"] = idx
-        print("筛选后字典大小：", len(vocab))
-        print("筛选后字典词频：", analyze_vocab(vocab))
+        print("筛选后词表大小：", len(vocab))
+        print("筛选后词表词频：", analyze_vocab(vocab))
         with open('vocab_NGram.json', 'w') as f:
             json.dump(vocab, f)
         return vocab
@@ -152,7 +152,7 @@ example = "e#s#c#a#p#a#d#e#s"
 
 def merge_symbols(max_freq_pair, token_freqs, symbols):
     global example
-    # 将最频繁的连续符号对合并为一个符号，并添加到词典
+    # 将最频繁的连续符号对合并为一个符号，并添加到词表
     # 合并只消除后缀符号的#，前缀符号保留
     symbols.append(''.join([max_freq_pair[0], max_freq_pair[1].replace("#", "")]))
     new_token_freqs = dict()
@@ -219,16 +219,16 @@ class BPE:
     def __init__(self, do_lower_case=True, vocab_size=20000):
         self.do_lower_case = do_lower_case
         if os.path.exists('vocab_BPE.json'):
-            print("开始加载BPE字典")
+            print("开始加载BPE词表")
             with open('vocab_BPE.json', 'r') as f:
                 self.vocab = json.load(f)
                 self.vocab_size = len(self.vocab)
-            print("加载BPE字典成功, 字典大小：", len(self.vocab))
+            print("加载BPE词表成功, 词表大小：", len(self.vocab))
         else:
-            print("开始生成BPE字典")
+            print("开始生成BPE词表")
             self.vocab_size = vocab_size
             self.vocab = self.generate_vocab()
-            print("生成BPE字典成功")
+            print("生成BPE词表成功")
 
     def generate_vocab(self, train_path='../Sentiment Analysis on Movie Reviews/train.tsv'):
         df_train = pd.read_csv(train_path, sep='\t', header=0)
@@ -254,7 +254,7 @@ class BPE:
             token_freqs['#'.join(token)] = word_freqs[token]
         freq_dict = {}
         num_merges = self.vocab_size - len(symbols)
-        print("开始BPE合并字典")
+        print("开始BPE合并词表")
         for i in tqdm(range(num_merges)):
             max_freq_pair, max_freq = get_max_freq_pair(token_freqs)
             if not max_freq_pair:
@@ -262,7 +262,7 @@ class BPE:
             merge_token = ''.join([max_freq_pair[0], max_freq_pair[1].replace("#", "")])
             freq_dict[merge_token] = max_freq
             token_freqs, symbols = merge_symbols(max_freq_pair, token_freqs, symbols)
-        print("BPE合并字典结束")
+        print("BPE合并词表结束")
         # 重新编号
         vocab = {}
         for i, token in enumerate(symbols):
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     print(bpe.generate_feature(['this is a good movie', 'this is a bad movie']))
     print("BPE time:", time.time() - time3)
 
-    # 在BPE字典中但不在BOW字典中的词
+    # 在BPE词表中但不在BOW词表中的词
     diff_vocab_1 = {}
     for k in bpe.vocab.keys():
         if k not in bow.vocab.keys():
@@ -338,7 +338,7 @@ if __name__ == "__main__":
     print(len(diff_vocab_1))
     print(analyze_vocab(diff_vocab_1))
 
-    # 在BOW字典中但不在BPE字典中的词
+    # 在BOW词表中但不在BPE词表中的词
     diff_vocab_2 = {}
     for k in bow.vocab.keys():
         if k not in bpe.vocab.keys():
