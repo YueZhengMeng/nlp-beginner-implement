@@ -140,4 +140,48 @@ lstm + glove  ： 63.193
 截图见 ./lab2/exp/kaggle_result_lab2_update.png  
 注意：重新试验后 ./lab2/exp 文件夹下的图片和csv文件已被更新覆盖。  
 
+# 任务三：基于注意力机制的文本匹配
 
+输入两个句子判断，判断它们之间的关系。参考[ESIM]( https://arxiv.org/pdf/1609.06038v3.pdf)（可以只用LSTM，忽略Tree-LSTM），用双向的注意力机制实现。
+
+1. 参考
+   1. 《[神经网络与深度学习](https://nndl.github.io/)》 第8章
+   2. Reasoning about Entailment with Neural Attention <https://arxiv.org/pdf/1509.06664v1.pdf>
+   3. Enhanced LSTM for Natural Language Inference <https://arxiv.org/pdf/1609.06038v3.pdf>
+2. 数据集：https://nlp.stanford.edu/projects/snli/
+3. 实现要求：Pytorch
+4. 知识点：
+   1. 注意力机制
+   2. token2token attention
+5. 时间：两周
+
+## 实现方法与结果
+1. 下载snli数据集，参考 https://zh.d2l.ai/chapter_natural-language-processing-applications/natural-language-inference-and-dataset.html 实现数据读取函数  
+    代码见 ./lab3/read_snli.py  &emsp;&emsp;  解压后数据集文件太大，不便上传到github。
+2. 为了使实现尽可能简单，使用BagOfWord tokenizer，基于训练集的premises与hypotheses的句子生成词表。  
+   最终词表包括PAD与UNK在内，大小为12527  
+    代码见 ./lab3/tokenizers.py
+3. 搭建ESIM模型，参考资料：  
+    https://zh.d2l.ai/chapter_natural-language-processing-applications/natural-language-inference-attention.html
+    https://zhuanlan.zhihu.com/p/509287055  
+    https://zhuanlan.zhihu.com/p/647038302  
+    代码见 ./lab3/ESIM.py
+4. 拟合实验：  
+    使用训练集的前3000条数据训练模型，使用验证集的前1000条数据验证模型，进行50个epoch的训练。  
+    batch_size=32，每个epoch迭代93步，使用Adam优化器，学习率0.001，损失函数为交叉熵。
+    模型在训练集上最终可以达到99%以上的准确率，在验证集上的精度在15个epoch时达到最高，迭代约1395步，之后不会继续上升。  
+    实验结果见 ./lab3/exp 文件夹下文件名包含bs=32的文件。  
+5. 正式训练：  
+    使用完整训练集和验证集训练模型，使用测试集进行预测。  
+    由于训练集数据量很大，扩大batch_size=1024，每个epoch迭代536步，进行10个epoch的训练。同样使用Adam优化器，学习率0.001，损失函数为交叉熵。每个epoch结束时在验证集上进行一次评测，保存到目前为止验证精度最高的权重。  
+    实验结果见 ./lab3/exp 文件夹下文件名包含bs=1024的文件。  
+6. 实验结果：  
+    验证集上的最佳模型在验证集上的精度为79.785%  
+    最佳模型在测试集上的精度为79.4686%  
+    复现运行 ./lab3/train.py 最后几行的加载权重与预测的代码即可。  
+
+## Tips
+1. 我将模型的参数量设置的很小，权重保存为文件后仅7.47MB。  
+   在使用AutoDL平台租用的3080进行正式实验时，batch_size=1024，显存的占用量约为2840MB。  
+   GPU使用率在5%与40%直接快速波动，CPU占用率一直是最高。  
+   猜测原因是我实现的tokenizer不够高效，导致CPU计算量过大。  
