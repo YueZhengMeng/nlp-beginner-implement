@@ -105,7 +105,7 @@ def train():
         if best_accuracy < val_accuracy:
             best_accuracy = val_accuracy
             model.save_model(model_save_path)
-            print("best model saved with train accuracy:", best_accuracy)
+            print("best model saved with val accuracy:", best_accuracy)
 
     plt.plot(train_accuracy_list, label='train')
     plt.plot(val_accuracy_list, label='val')
