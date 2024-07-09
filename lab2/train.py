@@ -63,7 +63,7 @@ total_train_steps = steps_every_epoch * int(epochs)
 
 # 划分验证集
 val_dataset = SentenceDataset(train_df[data_size:])
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=collete_fn)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=collete_fn)
 
 # 初始化模型
 if model_type == 'lstm' or model_type == 'gru':
@@ -88,10 +88,11 @@ def train_per_epoch(train_dataloader):
     model.train()
     correct = 0
     total = 0
-    for step, (input_ids, last_token_pos, labels) in enumerate(tqdm(train_dataloader)):
-        input_ids, last_token_pos, labels = input_ids.to(device), last_token_pos.to(device), labels.to(device)
+    for step, (input_ids, input_length, labels) in enumerate(tqdm(train_dataloader)):
+        # input_length被要求是在cpu上的tensor，这里不需要转移到CUDA
+        input_ids, labels = input_ids.to(device), labels.to(device)
         optimizer.zero_grad()
-        outputs = model(input_ids, last_token_pos)
+        outputs = model(input_ids, input_length)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -109,9 +110,10 @@ def eval_per_epoch(val_dataloader):
     correct = 0
     total = 0
     with torch.no_grad():
-        for step, (input_ids, last_token_pos, labels) in enumerate(tqdm(val_dataloader)):
-            input_ids, last_token_pos, labels = input_ids.to(device), last_token_pos.to(device), labels.to(device)
-            outputs = model(input_ids, last_token_pos)
+        for step, (input_ids, input_length, labels) in enumerate(tqdm(val_dataloader)):
+            # input_length被要求是在cpu上的tensor，这里不需要转移到CUDA
+            input_ids, labels = input_ids.to(device), labels.to(device)
+            outputs = model(input_ids, input_length)
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -158,9 +160,10 @@ def generate_submission():
     model.eval()
     with torch.no_grad():
         results = []
-        for step, (input_ids, last_token_pos, _) in enumerate(tqdm(test_dataloader)):
-            input_ids, last_token_pos = input_ids.to(device), last_token_pos.to(device)
-            outputs = model(input_ids, last_token_pos)
+        for step, (input_ids, input_length, _) in enumerate(tqdm(test_dataloader)):
+            # input_length被要求是在cpu上的tensor，这里不需要转移到CUDA
+            input_ids = input_ids.to(device)
+            outputs = model(input_ids, input_length)
             _, predicted = torch.max(outputs, 1)
             results.extend(predicted.cpu().numpy().tolist())
         submission_df = pd.DataFrame({'PhraseId': test_df['PhraseId'], 'Sentiment': results})

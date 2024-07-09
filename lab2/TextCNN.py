@@ -6,7 +6,7 @@ class TextCNN(nn.Module):
     def __init__(self, vocab_size, embedding_size, kernel_sizes=(2, 3, 4),
                  kernel_num=100, glove_weight=None, num_classes=5, dropout_prob=0.1):
         super().__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_size)
+        self.embedding = nn.Embedding(vocab_size, embedding_size, padding_idx=0)
         if glove_weight is not None:
             self.embedding.weight.data.copy_(glove_weight)
             self.embedding.weight.requires_grad = False
@@ -16,8 +16,8 @@ class TextCNN(nn.Module):
         self.dropout = nn.Dropout(dropout_prob)
         self.fc = nn.Linear(kernel_num * len(kernel_sizes), num_classes)
 
-    def forward(self, x, last_token_pos):
-        # 这里的last_token_pos是为了与TextRNN的forward函数统一接口
+    def forward(self, x, input_length=None):
+        # 这里的input_length是为了与TextRNN的forward函数统一接口
         x = self.embedding(x)
         x = x.unsqueeze(1)
         x = [torch.relu(conv(x)).squeeze(3) for conv in self.convs]
