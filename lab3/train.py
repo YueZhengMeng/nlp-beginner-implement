@@ -20,7 +20,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 train_data_size = None
 val_data_size = None
 test_data_size = None
-vocab_size = 12527
+vocab_size = BagOfWord().vocab_size
 rnn_num_layers = 3
 embedding_size = 50
 hidden_size = 2 * embedding_size
@@ -111,7 +111,6 @@ def eval_per_epoch(val_dataloader):
             # input_length被要求是在cpu上的tensor，这里不需要转移到CUDA
             premises_input_ids, hypotheses_input_ids, labels = premises_input_ids.to(device), hypotheses_input_ids.to(
                 device), labels.to(device)
-            optimizer.zero_grad()
             outputs = model(premises_input_ids, premises_sentence_length, hypotheses_input_ids,
                             hypotheses_sentence_length)
             _, predicted = torch.max(outputs, 1)

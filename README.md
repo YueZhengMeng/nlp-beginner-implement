@@ -190,9 +190,14 @@ lstm + glove  ： 63.193
    改进tokenizer、Dataset类与collate_fn方法。  
    在加载数据集时，先完成token2id的映射。该结果可以保存与加载。  
    由于pickle保存与加载tensor很慢，所以这里的数据类型都是list，加载完成后转换为tensor。由于转换为tensor也有一定的时间开销，所以在dataset的init方法中一次性完成，避免在collate_fn中反复转换。  
-   在dataloader的collate_fn中只执行batch pad。这一步不能预先完成，是因为训练时dataloader shuffle=True，每个batch需要pad对齐的长度不一定一样。
+   在dataloader的collate_fn中只执行batch pad，将同batch内的所有input_ids对齐到最长的长度。这一步不能预先完成，是因为训练时dataloader shuffle=True，每个batch需要pad对齐的长度不一定一样。
    在使用AutoDL平台租用的3080上重新实验，优化前一个batch的时间约165s，优化后约96s。GPU占用率稳定在46%左右，显存占用量无明显变化，CPU占用率还一直是最高。  
    此外，在改进过程中发现之前的tokenizer在生成词表时将所有句子转换为小写，但是在tokenize时没有做同样的处理，导致含义大写字母的词被标记为UNK。该错误已修正。  
    进行15个epoch的重新实验，模型在第8个epoch时在验证集上的精度达到最高，为81.7057%，此时在测试集上的精度为81.331%  
 
+## Tips
+   lab2的tokenizer、Dataset类与collate_fn方法也可以进行类似的优化。因为数据集较小，以及没有其他重新实验的必要，就不浪费时间了。  
+   后来查阅文档发现torch.nn.utils.rnn.pack_padded_sequence和torch.nn.utils.rnn.pad_packed_sequence已经包含了batch pad功能，不需要像我这样手动实现。  
+   最简单的实现，只需要将整个数据集的所有input_ids对齐到最长的长度，同时记录真实长度，然后直接取batch即可。但这种实现方法在数据集样本数巨大且其中最长句子很长时，会产生严重的空间浪费与访存压力。  
+   本实验数据集规模较大(超过50万条数据)，因为我的实现方法是也算是合理的。  
 
