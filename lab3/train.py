@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ESIM import ESIM
-from SnliDataset import SnliDataset, TokenizeCollator
+from SnliDataset import SnliDataset, BatchPadCollator
 from tokenizers import BagOfWord
 
 seed = 42
@@ -20,6 +20,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 train_data_size = None
 val_data_size = None
 test_data_size = None
+vocab_size = 12527
 rnn_num_layers = 3
 embedding_size = 50
 hidden_size = 2 * embedding_size
@@ -41,10 +42,7 @@ def seed_everything(seed):
 # 设置随机种子
 seed_everything(seed)
 
-# 实例化tokenizer
-bow_tokenizer = BagOfWord()
-
-collete_fn = TokenizeCollator(bow_tokenizer)
+collete_fn = BatchPadCollator()
 
 # 读取训练集
 data_dir = "../snli_1.0"
@@ -67,7 +65,7 @@ test_dataset = SnliDataset(data_dir, test_file_name, data_size=test_data_size)
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, collate_fn=collete_fn)
 
 # 初始化模型
-model = ESIM(bow_tokenizer.vocab_size, embedding_size, rnn_num_layers, hidden_size, dropout_prob, num_class).to(device)
+model = ESIM(vocab_size, embedding_size, rnn_num_layers, hidden_size, dropout_prob, num_class).to(device)
 
 # 定义优化器
 optimizer = AdamW(model.parameters(), lr=start_learning_rate)

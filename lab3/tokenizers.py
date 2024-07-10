@@ -1,7 +1,6 @@
 import json
 import os
 
-import torch
 from tqdm import tqdm
 
 from read_snli import read_snli
@@ -59,31 +58,18 @@ class BagOfWord:
             json.dump(vocab, f)
         return vocab
 
-    def tokenize(self, sent_list):
-        # 先计算每个batch中最长的句子长度，然后将所有句子填充到该长度
-        # 每个句子的实际长度也需要记录，用于对接torch.nn.utils.rnn.pack_padded_sequence与torch.nn.utils.rnn.pad_packed_sequence
-        max_len = 0
-        input_length = torch.zeros(len(sent_list), dtype=torch.int32)
-        for idx, sent in enumerate(sent_list):
-            words = sent.strip().split(" ")
-            if max_len < len(words):
-                max_len = len(words)
-            input_length[idx] = len(words)
-        # 使用vocab中的<PAD>填充
-        pad_index = self.vocab['<PAD>']["index"]
-        input_ids = torch.zeros((len(sent_list), max_len), dtype=torch.int32)
-        input_ids.fill_(pad_index)
-        # 使用vocab中的<UNK>表示未知词
+    def tokenize(self, sentence):
+        if self.do_lower_case:
+            sentence = sentence.lower()
+        words = sentence.strip().split(" ")
+        input_ids = []
         unk_index = self.vocab['<UNK>']["index"]
-        # 执行word2index转换
-        for idx, sent in enumerate(sent_list):
-            words = sent.strip().split(" ")
-            for i, word in enumerate(words):
-                if word in self.vocab:
-                    input_ids[idx][i] = self.vocab[word]["index"]
-                else:
-                    input_ids[idx][i] = unk_index
-        return input_ids, input_length
+        for i, word in enumerate(words):
+            if word in self.vocab:
+                input_ids.append(self.vocab[word]["index"])
+            else:
+                input_ids.append(unk_index)
+        return input_ids
 
 
 def analyze_vocab(vocab):
@@ -106,8 +92,5 @@ if __name__ == "__main__":
                  'A person is at a diner , ordering an omelette .',
                  'A person is outdoors , on a horse .']
 
-    input_ids, input_length = bow.tokenize(sent_list)
-
-    print(input_ids)
-
-    print(input_length)
+    for sent in sent_list:
+        print(bow.tokenize(sent))
