@@ -1,4 +1,5 @@
-label_set = {'O': 0, 'B-PER': 2, 'I-PER': 4, 'B-ORG': 3, 'I-ORG': 5, 'B-LOC': 1, 'I-LOC': 7, 'B-MISC': 6, 'I-MISC': 8}
+label_set = {'O': 0, 'B-LOC': 1, 'B-PER': 2, 'B-ORG': 3, 'I-PER': 4, 'I-ORG': 5, 'I-LOC': 7, 'B-MISC': 6, 'I-MISC': 8}
+
 
 def read_conll(data_dir, file_name):
     sentences = []

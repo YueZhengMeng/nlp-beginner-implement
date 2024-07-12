@@ -15,7 +15,7 @@ from torchcrf import CRF
 
 seed = 42
 batch_size = 1024
-start_learning_rate = 1e-3
+learning_rate = 1e-3
 epochs = 100
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 train_data_size = None
@@ -32,21 +32,40 @@ num_classes = 9
 dropout_prob = 0.1
 
 # 由于crf_loss的数值较大(大约是ce_loss的10倍以上)，所以需要乘以一个较小的系数
-crf_loss_weight = 0.0
-ce_loss_weight = 1
+crf_loss_weight = 0.1
+ce_loss_weight = 0
 
 if crf_loss_weight > 0 and ce_loss_weight > 0:
     loss_type = 'crf+ce'
-    start_learning_rate = 5e-4
+    learning_rate = 5e-4
 elif crf_loss_weight > 0:
     loss_type = 'crf'
 elif ce_loss_weight > 0:
     loss_type = 'ce'
 
-img_save_path = './exp/f1-%s-%s-bs=%d-lr=%.4f-hs=%d.png' % (
-    rnn_type, loss_type, batch_size, start_learning_rate, hidden_size)
-model_save_path = './exp/model-%s-%s-bs=%d-lr=%.4f-hs=%d.pth' % (
-    rnn_type, loss_type, batch_size, start_learning_rate, hidden_size)
+img_save_path = './exp/f1-%s-%s-bs=%d-lr=%.4f-hs=%d.png' % (rnn_type, loss_type, batch_size, learning_rate, hidden_size)
+model_save_path = './exp/model-%s-%s-bs=%d-lr=%.4f-hs=%d.pth' % (rnn_type, loss_type, batch_size, learning_rate, hidden_size)
+
+# img_save_path = './exp/SGD.png'
+# model_save_path = './exp/SGD.pth'
+
+# img_save_path = './exp/Adagrad.png'
+# model_save_path = './exp/Adagrad.pth'
+
+# img_save_path = './exp/Adadelta.png'
+# model_save_path = './exp/Adadelta.pth'
+
+# img_save_path = './exp/RMSprop.png'
+# model_save_path = './exp/RMSprop.pth'
+
+# img_save_path = './exp/Adam.png'
+# model_save_path = './exp/Adam.pth'
+
+# img_save_path = './exp/AdamW-b2-099.png'
+# model_save_path = './exp/AdamW-b2-099.pth'
+
+# img_save_path = './exp/Adadelta-rho-099.png'
+# model_save_path = './exp/Adadelta-rho-099.pth'
 
 
 def seed_everything(seed):
@@ -85,11 +104,19 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
 model = TextRNN(vocab_size, embedding_size, rnn_type, rnn_num_layers, hidden_size, num_classes, dropout_prob).to(device)
 
 # 定义优化器
-optimizer = AdamW(model.parameters(), lr=start_learning_rate)
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+# optimizer = AdamW(model.parameters(), lr=learning_rate, betas=(0.9, 0.99))
+# optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+# 使用Adagrad优化器或Adadelta优化器时，还要设置OneCycleLR的cycle_momentum=False
+# optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
+# optimizer = torch.optim.Adadelta(model.parameters(), lr=learning_rate, rho=0.99)
+
+# optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
+# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 # 定义带预热的线性递减学习率调度器
-lr_scheduler = OneCycleLR(optimizer, max_lr=start_learning_rate, total_steps=total_train_steps,
-                          anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0)
+lr_scheduler = OneCycleLR(optimizer, max_lr=learning_rate, total_steps=total_train_steps,
+                          anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0, cycle_momentum=False)
 
 # 定义损失函数
 criterion = torch.nn.CrossEntropyLoss()
@@ -219,8 +246,8 @@ def train():
     best_macro_f1 = 0
     for i in range(epochs):
         print("Epoch:", i)
-        train_macro_f1, train_micro_f1,train_accuracy = train_per_epoch(train_dataloader)
-        val_macro_f1, val_micro_f1,val_accuracy = eval_per_epoch(val_dataloader)
+        train_macro_f1, train_micro_f1, train_accuracy = train_per_epoch(train_dataloader)
+        val_macro_f1, val_micro_f1, val_accuracy = eval_per_epoch(val_dataloader)
         train_macro_f1_list.append(train_macro_f1)
         train_micro_f1_list.append(train_micro_f1)
         train_accuracy_list.append(train_accuracy)
@@ -248,8 +275,8 @@ def train():
 
 if __name__ == '__main__':
     # 开始训练之前先评估一下模型的初始性能
-    train_macro_f1_before, train_micro_f1_before,train_accuracy_before = eval_per_epoch(train_dataloader)
-    val_macro_f1_before, val_micro_f1_before,val_accuracy_before = eval_per_epoch(val_dataloader)
+    train_macro_f1_before, train_micro_f1_before, train_accuracy_before = eval_per_epoch(train_dataloader)
+    val_macro_f1_before, val_micro_f1_before, val_accuracy_before = eval_per_epoch(val_dataloader)
     train_macro_f1_list.append(train_macro_f1_before)
     train_micro_f1_list.append(train_micro_f1_before)
     train_accuracy_list.append(train_accuracy_before)
