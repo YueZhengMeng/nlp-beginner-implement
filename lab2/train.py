@@ -16,7 +16,7 @@ from tokenizers import GloVeTokenizer
 
 seed = 42
 batch_size = 32
-start_learning_rate = 1e-3
+learning_rate = 1e-3
 epochs = 10
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 embedding_dim = 50
@@ -30,11 +30,11 @@ num_class = 5
 data_size = 150000
 dropout_prob = 0.1
 img_save_path = './exp/accuracy-%s-ds=%d-bs=%d-lr=%.4f-hs=%d.png' % (
-    model_type, data_size, batch_size, start_learning_rate, hidden_size)
+    model_type, data_size, batch_size, learning_rate, hidden_size)
 model_save_path = './exp/model-%s-ds=%d-bs=%d-lr=%.4f-hs=%d.pt' % (
-    model_type, data_size, batch_size, start_learning_rate, hidden_size)
+    model_type, data_size, batch_size, learning_rate, hidden_size)
 submission_save_path = './exp/submission-%s-ds=%d-bs=%d-lr=%.4f-hs=%d.csv' % (
-    model_type, data_size, batch_size, start_learning_rate, hidden_size)
+    model_type, data_size, batch_size, learning_rate, hidden_size)
 
 
 def seed_everything(seed):
@@ -74,10 +74,10 @@ elif model_type == 'cnn':
                     num_class, dropout_prob).to(device)
 
 # 定义优化器
-optimizer = AdamW(model.parameters(), lr=start_learning_rate)
+optimizer = AdamW(model.parameters(), lr=learning_rate)
 
 # 定义带预热的线性递减学习率调度器
-lr_scheduler = OneCycleLR(optimizer, max_lr=start_learning_rate, total_steps=total_train_steps,
+lr_scheduler = OneCycleLR(optimizer, max_lr=learning_rate, total_steps=total_train_steps,
                           anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0)
 
 # 定义损失函数
