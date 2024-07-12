@@ -14,7 +14,7 @@ from tokenizers import BagOfWord
 
 seed = 42
 batch_size = 1024
-start_learning_rate = 1e-3
+learning_rate = 1e-3
 epochs = 10
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 train_data_size = None
@@ -26,8 +26,8 @@ embedding_size = 50
 hidden_size = 2 * embedding_size
 num_class = 3
 dropout_prob = 0.1
-img_save_path = './exp/accuracy--bs=%d-lr=%.4f-hs=%d.png' % (batch_size, start_learning_rate, hidden_size)
-model_save_path = './exp/model-bs=%d-lr=%.4f-hs=%d.pt' % (batch_size, start_learning_rate, hidden_size)
+img_save_path = './exp/accuracy--bs=%d-lr=%.4f-hs=%d.png' % (batch_size, learning_rate, hidden_size)
+model_save_path = './exp/model-bs=%d-lr=%.4f-hs=%d.pt' % (batch_size, learning_rate, hidden_size)
 
 
 def seed_everything(seed):
@@ -68,10 +68,10 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
 model = ESIM(vocab_size, embedding_size, rnn_num_layers, hidden_size, dropout_prob, num_class).to(device)
 
 # 定义优化器
-optimizer = AdamW(model.parameters(), lr=start_learning_rate)
+optimizer = AdamW(model.parameters(), lr=learning_rate)
 
 # 定义带预热的线性递减学习率调度器
-lr_scheduler = OneCycleLR(optimizer, max_lr=start_learning_rate, total_steps=total_train_steps,
+lr_scheduler = OneCycleLR(optimizer, max_lr=learning_rate, total_steps=total_train_steps,
                           anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0)
 
 # 定义损失函数
