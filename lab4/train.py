@@ -12,6 +12,8 @@ from ConllDataset import ConllDataset
 from TextRNN import TextRNN
 from tokenizers import BagOfWord
 from torchcrf import CRF
+from read_conll import label_weight
+from LossFunction import WeightedCrossEntropyLoss, MultiFocalLoss
 
 seed = 42
 batch_size = 1024
@@ -67,6 +69,12 @@ model_save_path = './exp/model-%s-%s-bs=%d-lr=%.4f-hs=%d.pth' % (rnn_type, loss_
 # img_save_path = './exp/Adadelta-rho-099.png'
 # model_save_path = './exp/Adadelta-rho-099.pth'
 
+# img_save_path = './exp/weight_CE_loss.png'
+# model_save_path = './exp/weight_CE_loss.pth'
+
+# img_save_path = './exp/focal_loss.png'
+# model_save_path = './exp/focal_loss.pth'
+
 
 def seed_everything(seed):
     random.seed(seed)
@@ -116,10 +124,12 @@ optimizer = AdamW(model.parameters(), lr=learning_rate)
 
 # 定义带预热的线性递减学习率调度器
 lr_scheduler = OneCycleLR(optimizer, max_lr=learning_rate, total_steps=total_train_steps,
-                          anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0, cycle_momentum=False)
+                          anneal_strategy='linear', pct_start=0.1, div_factor=10.0, final_div_factor=10.0)
 
 # 定义损失函数
 criterion = torch.nn.CrossEntropyLoss()
+# criterion = WeightedCrossEntropyLoss(label_weight, device)
+# criterion = MultiFocalLoss(num_classes)
 crf = CRF(num_classes, batch_first=True).to(device)
 
 
