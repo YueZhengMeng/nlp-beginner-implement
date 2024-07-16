@@ -90,7 +90,7 @@ def train_per_epoch(train_dataloader):
         optimizer.zero_grad()
         outputs, decoder_hidden = model(input_ids, input_length, output_ids, output_length)
         batch_max_length = outputs.shape[1]
-        mask = (torch.arange(batch_max_length).unsqueeze(0) < input_length.unsqueeze(1)).to(device)
+        mask = (torch.arange(batch_max_length).unsqueeze(0) < output_length.unsqueeze(1)).to(device)
         # 根据input_length取出有效token与label
         outputs = outputs.view(-1, vocab_size)[mask.view(-1)]
         labels = labels.view(-1)[mask.view(-1)]
@@ -119,7 +119,7 @@ def eval_per_epoch(test_dataloader):
             input_ids, output_ids, labels = input_ids.to(device), output_ids.to(device), labels.to(device)
             outputs, decoder_hidden = model(input_ids, input_length, output_ids, output_length)
             batch_max_length = outputs.shape[1]
-            mask = (torch.arange(batch_max_length).unsqueeze(0) < input_length.unsqueeze(1)).to(device)
+            mask = (torch.arange(batch_max_length).unsqueeze(0) < output_length.unsqueeze(1)).to(device)
             outputs = outputs.view(-1, vocab_size)[mask.view(-1)]
             labels = labels.view(-1)[mask.view(-1)]
             _, predicted = torch.max(outputs, 1)
@@ -251,6 +251,12 @@ if __name__ == '__main__':
     print("output:", output_sentence)
     print("perplexity:", perplexity)
 
+    input_sentence = "少陵野老吞声哭"
+    output_sentence, perplexity = inference(model, tokenizer, input_sentence)
+    print("input:", input_sentence)
+    print("output:", output_sentence)
+    print("perplexity:", perplexity)
+
     # 评估测试集上最佳模型性能
     model.load_state_dict(torch.load(model_save_path))
 
@@ -268,6 +274,12 @@ if __name__ == '__main__':
     print("perplexity:", perplexity)
 
     input_sentence = "细软青丝履"
+    output_sentence, perplexity = inference(model, tokenizer, input_sentence)
+    print("input:", input_sentence)
+    print("output:", output_sentence)
+    print("perplexity:", perplexity)
+
+    input_sentence = "少陵野老吞声哭"
     output_sentence, perplexity = inference(model, tokenizer, input_sentence)
     print("input:", input_sentence)
     print("output:", output_sentence)
