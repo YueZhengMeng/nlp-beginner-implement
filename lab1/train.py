@@ -22,7 +22,7 @@ hidden_size = 4 * input_size
 num_class = 5
 data_size = 150000
 # tokenizer_type = 'bow' 或 'ngram' 或 ‘bpe’
-tokenizer_type = 'bpe'
+tokenizer_type = 'ngram'
 img_save_path = './exp/accuracy-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.png' % (
     tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size)
 model_save_path = './exp/model-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.npz' % (

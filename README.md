@@ -39,7 +39,7 @@
     实验结果见 ./lab1/exp 文件夹下文件名包含ds=150000的图片和csv文件。使用ngram的模型参数量太大，不便上传到github。  
 5. 上传kaggle：
     将测试集的预测结果上传到kaggle评测。  
-    基于BOW的模型精度为59.613%，基于NGram的模型精度为60.108%  
+    基于BOW的模型精度为59.613%，基于NGram的模型精度为57.804%  
     截图见 ./lab1/exp/kaggle_result_lab1.png
 
 ## Tips
@@ -68,6 +68,13 @@
 &emsp;&emsp;merged:  e #scap -> escap &emsp;                          e#scapades -> escapades  
 &emsp;发现每次合并的两个子词可以在原单词的任意位置，最后一步也不一定正好是合并单词的前半部分与后半部分。因此，BPE的词表中不一定会包含每一个完整的词。  
 &emsp;至此疑惑得到解答。
+
+## 更新
+&emsp;在第一版的实现中，NGram tokenizer的generate_feature函数在分词时，没有优先匹配最长的token并跳过已匹配的字符，导致了tokenize结果中出现了重复。  
+&emsp;该错误目前已经纠正。重新提交kaggle评测，精度为57.804%。  
+&emsp;纠错前NGram的精度60.108%比纠错后更高，猜测原因是之前的实现在句向量中加入了更多细粒度token。  
+&emsp;NGram的词表中词频介于10-20之间的低频词很多（26656/39708），有重复的NGram tokenizer使得词向量可以被更充分地训练，句向量汇总的信息也更多，因此经过本lab的简单MLP模型映射后，取得了更好的效果。  
+&emsp;此外，在保存vocab时，设置了json文件的格式化，避免超长单行导致的IDE卡顿问题。  
 
 # 任务二：基于深度学习的文本分类
 

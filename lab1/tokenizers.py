@@ -45,8 +45,9 @@ class BagOfWord:
             vocab[k]["index"] = idx
         print("筛选后词表大小：", len(vocab))
         print("筛选后词表词频：", analyze_vocab(vocab))
-        with open('vocab_BOW.json', 'w') as f:
-            json.dump(vocab, f)
+        with open('vocab_BOW.json', 'w', encoding='utf-8') as f:
+            # indent=4启动格式化写入，否则打开json文件会很卡
+            json.dump(vocab, f, indent=4, ensure_ascii=False)
         return vocab
 
     def generate_feature(self, sent_list):
@@ -104,8 +105,9 @@ class NGram:
             vocab[k]["index"] = idx
         print("筛选后词表大小：", len(vocab))
         print("筛选后词表词频：", analyze_vocab(vocab))
-        with open('vocab_NGram.json', 'w') as f:
-            json.dump(vocab, f)
+        with open('vocab_NGram.json', 'w', encoding='utf-8') as f:
+            # indent=4启动格式化写入，否则打开json文件会很卡
+            json.dump(vocab, f, indent=4, ensure_ascii=False)
         return vocab
 
     def generate_feature(self, sent_list):
@@ -115,11 +117,23 @@ class NGram:
             if self.do_lower_case:
                 sent = sent.lower()
             sent = sent.split(" ")
-            for gram in self.ngram:
-                for i in range(len(sent) - gram + 1):
-                    feature = "_".join(sent[i:i + gram])
-                    if feature in self.vocab:
-                        sent_feature[idx][self.vocab[feature]["index"]] += 1
+            i = 0
+            while i < len(sent):
+                matched = False
+                # Try to match the longest possible n-gram first
+                for gram in sorted(self.ngram, reverse=True):
+                    if i + gram <= len(sent):
+                        feature = "_".join(sent[i:i + gram])
+                        if feature in self.vocab:
+                            sent_feature[idx][self.vocab[feature]["index"]] += 1
+                            i += gram
+                            matched = True
+                            break
+                if not matched:
+                    # 直接生成句向量时不需要加入<UNK>
+                    # If no n-gram matched, use <UNK>
+                    # sent_feature[idx][self.vocab["<UNK>"]["index"]] += 1
+                    i += 1
         return sent_feature
 
 
@@ -226,6 +240,7 @@ class BPE:
             print("加载BPE词表成功, 词表大小：", len(self.vocab))
         else:
             print("开始生成BPE词表")
+            print("刚开始生成会显示需要很长时间，后面会越来越快，整体在5分钟左右完成")
             self.vocab_size = vocab_size
             self.vocab = self.generate_vocab()
             print("生成BPE词表成功")
@@ -250,7 +265,8 @@ class BPE:
                     word_freqs[word] += 1
         token_freqs = {}
         for token, freq in word_freqs.items():
-            # token拆分到字符级，然后用空格分隔连接
+            # token拆分到字符级，然后用插入#分隔
+            # 'series' -> 's#e#r#i#e#s'
             token_freqs['#'.join(token)] = word_freqs[token]
         freq_dict = {}
         num_merges = self.vocab_size - len(symbols)
@@ -272,8 +288,9 @@ class BPE:
                 # 保留出现次数不小于10的词，以及index和count信息
                 if freq_dict[token] >= 10:
                     vocab[token] = {"index": i, "count": freq_dict[token]}
-        with open('vocab_BPE.json', 'w') as f:
-            json.dump(vocab, f)
+        with open('vocab_BPE.json', 'w', encoding='utf-8') as f:
+            # indent=4启动格式化写入，否则打开json文件会很卡
+            json.dump(vocab, f, indent=4, ensure_ascii=False)
         """
         从软件工程的角度来看，这段代码中的vocab、symbols、freq_dict应该整合在一起
         但我从一个个人学习用项目的角度出发，决定与参考资料《动手学深度学习》中的相关章节的代码保持一致
@@ -309,24 +326,24 @@ def analyze_vocab(vocab):
 
 if __name__ == "__main__":
     bow = BagOfWord()
-    print(analyze_vocab(bow.vocab))
+    print("BagOfWord vocab frequency", analyze_vocab(bow.vocab))
 
     ngram = NGram()
-    print(analyze_vocab(ngram.vocab))
+    print("NGram vocab frequency", analyze_vocab(ngram.vocab))
 
     bpe = BPE()
-    print(analyze_vocab(bpe.vocab))
+    print("BPE vocab frequency", analyze_vocab(bpe.vocab))
 
     time1 = time.time()
-    print(bow.generate_feature(['this is a good movie', 'this is a bad movie']))
+    print("BagOfWord result", bow.generate_feature(['this is a good movie', 'this is a bad movie']))
     print("BagOfWord time:", time.time() - time1)
 
     time2 = time.time()
-    print(ngram.generate_feature(['this is a good movie', 'this is a bad movie']))
+    print("NGram result", ngram.generate_feature(['this is a good movie', 'this is a bad movie']))
     print("NGram time:", time.time() - time2)
 
     time3 = time.time()
-    print(bpe.generate_feature(['this is a good movie', 'this is a bad movie']))
+    print("BPE result", bpe.generate_feature(['this is a good movie', 'this is a bad movie']))
     print("BPE time:", time.time() - time3)
 
     # 在BPE词表中但不在BOW词表中的词
