@@ -11,24 +11,29 @@ from tokenizers import BagOfWord, NGram, BPE
 
 seed = 42
 batch_size = 32
-# 手搓模型的梯度值很小，所以学习率设置的比较大
-# 整个训练过程中学习率从0.1线性下降到0.01
-start_learning_rate = 0.1
-end_learning_rate = 0.01
-epochs = 10
+# SGD优化器需要学习率设置的比较大，整个训练过程中学习率从0.1线性下降到0.01
+# AdamW优化器需要学习率设置的比较小，整个训练过程中学习率从1e-3线性下降到1e-5
+start_learning_rate = 1e-3
+end_learning_rate = 1e-5
+epochs = 100
 
 input_size = 128
 hidden_size = 4 * input_size
 num_class = 5
 data_size = 150000
+
 # tokenizer_type = 'bow' 或 'ngram' 或 ‘bpe’
-tokenizer_type = 'ngram'
-img_save_path = './exp/accuracy-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.png' % (
-    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size)
-model_save_path = './exp/model-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.npz' % (
-    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size)
-submission_save_path = './exp/submission-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d.csv' % (
-    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size)
+tokenizer_type = 'bpe'
+
+# optimizer = 'sgd' 或 'adamw'
+optimizer = 'adamw'
+
+img_save_path = './exp/accuracy-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d-op=%s.png' % (
+    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size, optimizer)
+model_save_path = './exp/model-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d-op=%s.npz' % (
+    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size, optimizer)
+submission_save_path = './exp/submission-%s-ds=%d-bs=%d-lr=%.2f-%.2f-hs=%d-op=%s.csv' % (
+    tokenizer_type, data_size, batch_size, start_learning_rate, end_learning_rate, hidden_size, optimizer)
 
 # 设置随机种子
 np.random.seed(seed)
@@ -55,7 +60,7 @@ val_dataloader = SentenceDataloader(val_df, tokenizer, batch_size)
 print("val data size:", val_dataloader.data_size)
 
 # 初始化模型
-model = SentenceClassificationModel(tokenizer.vocab_size, input_size, hidden_size, num_class)
+model = SentenceClassificationModel(tokenizer.vocab_size, input_size, hidden_size, num_class, optimizer)
 
 
 def train_per_epoch(train_dataloader):
